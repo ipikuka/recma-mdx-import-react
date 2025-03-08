@@ -119,7 +119,7 @@ describe("recmaMdxImportReact", () => {
         [
           recmaMdxImportReact,
           {
-            argumentToBeAdded: undefined,
+            argumentsToBeAdded: undefined,
             propertiesToBeInjected: undefined,
           } as ImportReactOptions,
         ],
@@ -201,7 +201,7 @@ describe("recmaMdxImportReact", () => {
         [
           recmaMdxImportReact,
           {
-            argumentToBeAdded: ["React", "Preact"],
+            argumentsToBeAdded: ["React", "Preact"],
             propertiesToBeInjected: [
               ["React", "React"],
               ["Fragment", "_Fragment"],

@@ -3,12 +3,12 @@ import type { Node, Program, Property, VariableDeclaration } from "estree";
 import { CONTINUE, EXIT, visit } from "estree-util-visit";
 
 export type ImportReactOptions = {
-  argumentToBeAdded?: string[];
+  argumentsToBeAdded?: string[];
   propertiesToBeInjected?: [string, string][]; // array of [key, value] tuples
 };
 
 const DEFAULT_SETTINGS: ImportReactOptions = {
-  argumentToBeAdded: ["React"],
+  argumentsToBeAdded: ["React"],
   propertiesToBeInjected: [["React", "React"]],
 };
 
@@ -76,7 +76,7 @@ const plugin: Plugin<[ImportReactOptions?], Program> = (options) => {
     const importedComponents: string[] = [];
 
     // insert "const React = argument[0].React;"
-    if (settings.argumentToBeAdded?.length) {
+    if (settings.argumentsToBeAdded?.length) {
       visit(tree, (node, _, index, ancestors) => {
         if (index === undefined) return;
 
@@ -87,7 +87,7 @@ const plugin: Plugin<[ImportReactOptions?], Program> = (options) => {
             parent["body"].splice(
               index,
               0,
-              ...settings.argumentToBeAdded.map(composeVariableDeclaration),
+              ...settings.argumentsToBeAdded.map(composeVariableDeclaration),
             );
 
             return EXIT;

@@ -8,7 +8,7 @@
 [![typescript][badge-typescript]][url-typescript]
 [![license][badge-license]][url-license]
 
-This package is a **[unified][unified]** (**[recma][recma]**) plugin **that ensures getting React from argument[0] and and inject it as property into the imported components in the compiled source.**
+This package is a **[unified][unified]** (**[recma][recma]**) plugin **that ensures getting React from argument[0] and inject it as property into the imported components in the compiled source.**
 
 **[unified][unified]** is a project that transforms content with abstract syntax trees (ASTs) using the new parser **[micromark][micromark]**. **[recma][recma]** adds support for producing a javascript code by transforming **[esast][esast]** which stands for Ecma Script Abstract Syntax Tree (AST) that is used in production of compiled source for the **[MDX][MDX]**.
 
@@ -91,19 +91,19 @@ All options are optional.
 
 ```typescript
 export type ImportReactOptions = {
-  argumentToBeAdded?: string[];
+  argumentsToBeAdded?: string[];
   propertiesToBeInjected?: [string, string][]; // array of [key, value] tuples
 };
 ```
 
-### argumentToBeAdded
+### argumentsToBeAdded
 
 It is an **array** option to get arguments from arguments[0] in the compiled source.
 
 The default is `["React"]`.
 
 ```javascript
-use(recmaMdxImportReact, { argumentToBeAdded: ["Preact"] } as ImportReactOptions);
+use(recmaMdxImportReact, { argumentsToBeAdded: ["Preact"] } as ImportReactOptions);
 ```
 
 Now the statement will be `const Preact = arguments[0].Preact;` in the compiled source.
@@ -202,7 +202,7 @@ I like to contribute the Unified / Remark / MDX ecosystem, so I recommend you to
 [badge-typescript]: https://img.shields.io/npm/types/recma-mdx-import-react
 [url-typescript]: https://www.typescriptlang.org/
 
-[badge-codecov]: https://codecov.io/gh/ipikuka/recma-mdx-import-react/graph/badge.svg?token=0gyxyIrEKs
+[badge-codecov]: https://codecov.io/gh/ipikuka/recma-mdx-import-react/graph/badge.svg?token=kyhrfChvkO
 [url-codecov]: https://codecov.io/gh/ipikuka/recma-mdx-import-react
 
 [badge-type-coverage]: https://img.shields.io/badge/dynamic/json.svg?label=type-coverage&prefix=%E2%89%A5&suffix=%&query=$.typeCoverage.atLeast&uri=https%3A%2F%2Fraw.githubusercontent.com%2Fipikuka%2Frecma-mdx-import-react%2Fmaster%2Fpackage.json
