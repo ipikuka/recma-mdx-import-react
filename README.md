@@ -18,7 +18,7 @@ It is a work around for the issues
  * https://github.com/vercel/next.js/issues/76395
  * https://github.com/ipikuka/next-mdx-remote-client/issues/9
 
-**The package/app should insert `React` instance to function construction arguments to get it in the compiled sorce !**
+**You should insert `React` instance into function construction arguments to get it in the compiled source !**
 
 ## Installation
 
