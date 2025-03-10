@@ -1,6 +1,6 @@
 import type { Plugin } from "unified";
 import type { Node, Program, Property, VariableDeclaration } from "estree";
-import { CONTINUE, EXIT, visit } from "estree-util-visit";
+import { CONTINUE, EXIT, SKIP, visit } from "estree-util-visit";
 
 export type ImportReactOptions = {
   argumentsToBeAdded?: string[];
@@ -101,38 +101,42 @@ const plugin: Plugin<[ImportReactOptions?], Program> = (options) => {
     if (!settings.propertiesToBeInjected?.length) return;
 
     // finds imported React components
-    visit(tree, (node) => {
+    visit(tree, (node, _, index, ancestors) => {
       if (node.type !== "VariableDeclaration") return CONTINUE;
+
+      // we are looking for first-level declarations only
+      if (ancestors.length > 1) return SKIP;
 
       let name: string | undefined;
       let value: string | number | bigint | boolean | RegExp | null | undefined;
 
-      if (node.declarations[0].id.type === "ObjectPattern") {
-        const property = node.declarations[0].id.properties[0];
-        if (property.type === "Property" && property.value.type === "Identifier") {
-          name = property.value.name;
-        }
-      }
+      const variableDeclarator = node.declarations[0];
+      const pattern = variableDeclarator.id;
+      const expression = variableDeclarator.init;
 
-      if (node.declarations[0].init?.type === "AwaitExpression") {
-        if (node.declarations[0].init.argument.type === "ImportExpression") {
-          if (node.declarations[0].init.argument.source.type === "CallExpression") {
-            const argument = node.declarations[0].init.argument.source.arguments[0];
+      if (
+        expression?.type === "MemberExpression" &&
+        expression.property.type === "Identifier" &&
+        expression.property.name === "default" &&
+        expression.object.type === "AwaitExpression"
+      ) {
+        if (expression.object.argument.type === "ImportExpression") {
+          if (expression.object.argument.source.type === "CallExpression") {
+            const argument = expression.object.argument.source.arguments[0];
             if (argument.type === "Literal") {
               value = argument.value;
             }
           }
         }
-      }
-
-      /* istanbul ignore if */
-      if (!name) {
-        return CONTINUE;
-      }
-
-      // if the name doesn't start with uppercase or leading underscore
-      if (/^[^A-Z_].*/.test(name)) {
-        return CONTINUE;
+      } else if (expression?.type === "AwaitExpression") {
+        if (expression.argument.type === "ImportExpression") {
+          if (expression.argument.source.type === "CallExpression") {
+            const argument = expression.argument.source.arguments[0];
+            if (argument.type === "Literal") {
+              value = argument.value;
+            }
+          }
+        }
       }
 
       /* istanbul ignore if */
@@ -147,6 +151,30 @@ const plugin: Plugin<[ImportReactOptions?], Program> = (options) => {
         !value.endsWith(".cjs") &&
         !value.endsWith(".jsx")
       ) {
+        return CONTINUE;
+      }
+
+      if (pattern.type === "ObjectPattern") {
+        const property = pattern.properties[0];
+        if (
+          property.type === "Property" &&
+          property.key.type === "Identifier" &&
+          property.key.name === "default" &&
+          property.value.type === "Identifier"
+        ) {
+          name = property.value.name;
+        }
+      } else if (pattern.type === "Identifier") {
+        name = pattern.name;
+      }
+
+      /* istanbul ignore if */
+      if (!name) {
+        return CONTINUE;
+      }
+
+      // if the name doesn't start with uppercase or leading underscore
+      if (/^[^A-Z_].*/.test(name)) {
         return CONTINUE;
       }
 
@@ -188,8 +216,6 @@ const plugin: Plugin<[ImportReactOptions?], Program> = (options) => {
         return CONTINUE;
       });
     }
-
-    // console.dir(tree, { depth: 14 });
   };
 };
 
