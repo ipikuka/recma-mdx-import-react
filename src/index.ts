@@ -15,7 +15,7 @@ const DEFAULT_SETTINGS: ImportReactOptions = {
 const JSXRUNTIME = ["Fragment", "jsx", "jsxs"];
 const JSXDEVRUNTIME = ["Fragment", "jsxDev"];
 const MAP_OF_JSXRUNTIME = {
-  Fragment: "Fragment",
+  Fragment: "_Fragment",
   jsx: "_jsx",
   jsxs: "_jsxs",
   jsxDev: "_jsxDev",
@@ -58,46 +58,21 @@ function composeVariableDeclaration(name: string): VariableDeclaration {
  *
  */
 function composeRuntimeProps(runtimeProps: ImportReactOptions["runtimeProps"]): Property {
-  const properties: Property[] = [];
+  const propertyMap: Record<string, string> = {};
 
   runtimeProps?.forEach((runtimeProp) => {
-    if (runtimeProp === "React") {
-      properties.push({
-        type: "Property",
-        key: { type: "Identifier", name: "React" },
-        value: { type: "Identifier", name: "React" },
-        kind: "init",
-        method: false,
-        shorthand: true,
-        computed: false,
+    if (runtimeProp === "jsx-runtime") {
+      JSXRUNTIME.forEach((j) => {
+        propertyMap[j] = MAP_OF_JSXRUNTIME[j as keyof typeof MAP_OF_JSXRUNTIME];
       });
-    } else if (runtimeProp === "jsx-runtime") {
-      [
-        ["Fragment", "Fragment"],
-        ["jsx", "_jsx"],
-        ["jsxs", "_jsxs"],
-        ["jsxDev", "_jsxDev"],
-      ].forEach((keyvalue) => {
-        properties.push({
-          type: "Property",
-          key: { type: "Identifier", name: keyvalue[0] },
-          value: { type: "Identifier", name: keyvalue[1] },
-          kind: "init",
-          method: false,
-          shorthand: keyvalue[0] === keyvalue[1],
-          computed: false,
-        });
+    } else if (runtimeProp === "jsx-dev-runtime") {
+      JSXDEVRUNTIME.forEach((j) => {
+        propertyMap[j] = MAP_OF_JSXRUNTIME[j as keyof typeof MAP_OF_JSXRUNTIME];
       });
+    } else if (typeof runtimeProp === "string") {
+      propertyMap[runtimeProp] = runtimeProp;
     } else {
-      properties.push({
-        type: "Property",
-        key: { type: "Identifier", name: runtimeProp[0] },
-        value: { type: "Identifier", name: runtimeProp[1] },
-        kind: "init",
-        method: false,
-        shorthand: runtimeProp[0] === runtimeProp[1],
-        computed: false,
-      });
+      propertyMap[runtimeProp[0]] = runtimeProp[1];
     }
   });
 
@@ -106,7 +81,15 @@ function composeRuntimeProps(runtimeProps: ImportReactOptions["runtimeProps"]): 
     key: { type: "Identifier", name: "runtimeProps" },
     value: {
       type: "ObjectExpression",
-      properties,
+      properties: Object.entries(propertyMap).map((property) => ({
+        type: "Property",
+        key: { type: "Identifier", name: property[0] },
+        value: { type: "Identifier", name: property[1] },
+        kind: "init",
+        method: false,
+        shorthand: property[0] === property[1],
+        computed: false,
+      })),
     },
     kind: "init",
     method: false,

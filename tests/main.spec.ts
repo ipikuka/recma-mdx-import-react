@@ -237,28 +237,25 @@ describe("recmaMdxImportReact", () => {
           }), "\\n", _jsx(Test1, {
             runtimeProps: {
               React,
-              Fragment,
+              Fragment: _Fragment,
               jsx: _jsx,
-              jsxs: _jsxs,
-              jsxDev: _jsxDev
+              jsxs: _jsxs
             },
             other: 2
           }), "\\n", _jsx(Test2, {
             runtimeProps: {
               React,
-              Fragment,
+              Fragment: _Fragment,
               jsx: _jsx,
-              jsxs: _jsxs,
-              jsxDev: _jsxDev
+              jsxs: _jsxs
             },
             other: "me"
           }), "\\n", _jsx(Test3, {
             runtimeProps: {
               React,
-              Fragment,
+              Fragment: _Fragment,
               jsx: _jsx,
-              jsxs: _jsxs,
-              jsxDev: _jsxDev
+              jsxs: _jsxs
             },
             other: re
           }), "\\n", _jsx("img", {
@@ -388,8 +385,53 @@ describe("recmaMdxImportReact", () => {
       ],
     });
 
-    expect(String(compiledSource)).toContain(dedent`
+    expect(String(compiledSource)).toMatchInlineSnapshot(`
+      ""use strict";
+      const React = arguments[0].React;
       const {Fragment: _Fragment, jsx: _jsx, jsxs: _jsxs, jsxDev: _jsxDev} = arguments[0];
+      const _importMetaUrl = arguments[0].baseUrl;
+      if (!_importMetaUrl) throw new Error("Unexpected missing \`options.baseUrl\` needed to support \`export … from\`, \`import\`, or \`import.meta.url\` when generating \`function-body\`");
+      const {default: Test} = await import(_resolveDynamicMdxSpecifier("./context/Test.mjs"));
+      function _createMdxContent(props) {
+        const _components = {
+          p: "p",
+          ...props.components
+        };
+        return _jsxs(_Fragment, {
+          children: [_jsx(_components.p, {
+            children: "Hi"
+          }), "\\n", _jsx(Test, {
+            runtimeProps: {
+              React,
+              Fragment: _Fragment,
+              jsxDev: _jsxDev
+            },
+            source: "Hi"
+          })]
+        });
+      }
+      function MDXContent(props = {}) {
+        const {wrapper: MDXLayout} = props.components || ({});
+        return MDXLayout ? _jsx(MDXLayout, {
+          ...props,
+          children: _jsx(_createMdxContent, {
+            ...props
+          })
+        }) : _createMdxContent(props);
+      }
+      return {
+        default: MDXContent
+      };
+      function _resolveDynamicMdxSpecifier(d) {
+        if (typeof d !== "string") return d;
+        try {
+          new URL(d);
+          return d;
+        } catch {}
+        if (d.startsWith("/") || d.startsWith("./") || d.startsWith("../")) return new URL(d, _importMetaUrl).href;
+        return d;
+      }
+      "
     `);
   });
 
@@ -410,7 +452,7 @@ describe("recmaMdxImportReact", () => {
     });
 
     expect(String(compiledSource)).toContain(dedent`
-      const {jsx: _jsx, Fragment: Fragment, jsxs: _jsxs, jsxDev: _jsxDev} = arguments[0];
+      const {jsx: _jsx, Fragment: _Fragment, jsxs: _jsxs, jsxDev: _jsxDev} = arguments[0];
     `);
   });
 
@@ -432,7 +474,7 @@ describe("recmaMdxImportReact", () => {
     });
 
     expect(String(compiledSource)).toContain(dedent`
-      const {jsxDEV: _jsxDEV, Fragment: Fragment, jsx: _jsx, jsxs: _jsxs} = arguments[0];
+      const {jsxDEV: _jsxDEV, Fragment: _Fragment, jsx: _jsx, jsxs: _jsxs} = arguments[0];
     `);
   });
 

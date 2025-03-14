@@ -23,7 +23,7 @@ It is a fix for the issues
 **The tool you use should insert `React` instance into function construction arguments to get it in the compiled source !**
 + **`next-mdx-remote-client`** provides the `React` instance available in the compiled source.
 + **`next-mdx-remote`** doesn't provide the `React` instance; and it doesn't support import either.
-+ **`@mdx-js/mdx`** doesn't provide the `React` instance yet.
++ **`@mdx-js/mdx`** doesn't provide the `React` instance yet in the runtime options.
 
 ## Installation
 
