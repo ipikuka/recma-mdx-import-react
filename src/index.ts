@@ -3,13 +3,22 @@ import type { Node, Program, Property, VariableDeclaration } from "estree";
 import { CONTINUE, EXIT, SKIP, visit } from "estree-util-visit";
 
 export type ImportReactOptions = {
-  argumentsToBeAdded?: string[];
-  propertiesToBeInjected?: [string, string][]; // array of [key, value] tuples
+  arguments?: string[];
+  runtimeProps?: ("React" | "jsx-runtime" | "jsx-dev-runtime" | [string, string])[];
 };
 
 const DEFAULT_SETTINGS: ImportReactOptions = {
-  argumentsToBeAdded: ["React"],
-  propertiesToBeInjected: [["React", "React"]],
+  arguments: ["React"],
+  runtimeProps: ["React"],
+};
+
+const JSXRUNTIME = ["Fragment", "jsx", "jsxs"];
+const JSXDEVRUNTIME = ["Fragment", "jsxDev"];
+const MAP_OF_JSXRUNTIME = {
+  Fragment: "Fragment",
+  jsx: "_jsx",
+  jsxs: "_jsxs",
+  jsxDev: "_jsxDev",
 };
 
 /**
@@ -45,17 +54,63 @@ function composeVariableDeclaration(name: string): VariableDeclaration {
 
 /**
  *
- * compose property to be injected into the react components imported
+ * compose runtime props to be injected into the imported react components as "runtimeProps"
  *
  */
-function composeProperty(keyvalue: [string, string]): Property {
+function composeRuntimeProps(runtimeProps: ImportReactOptions["runtimeProps"]): Property {
+  const properties: Property[] = [];
+
+  runtimeProps?.forEach((runtimeProp) => {
+    if (runtimeProp === "React") {
+      properties.push({
+        type: "Property",
+        key: { type: "Identifier", name: "React" },
+        value: { type: "Identifier", name: "React" },
+        kind: "init",
+        method: false,
+        shorthand: true,
+        computed: false,
+      });
+    } else if (runtimeProp === "jsx-runtime") {
+      [
+        ["Fragment", "Fragment"],
+        ["jsx", "_jsx"],
+        ["jsxs", "_jsxs"],
+        ["jsxDev", "_jsxDev"],
+      ].forEach((keyvalue) => {
+        properties.push({
+          type: "Property",
+          key: { type: "Identifier", name: keyvalue[0] },
+          value: { type: "Identifier", name: keyvalue[1] },
+          kind: "init",
+          method: false,
+          shorthand: keyvalue[0] === keyvalue[1],
+          computed: false,
+        });
+      });
+    } else {
+      properties.push({
+        type: "Property",
+        key: { type: "Identifier", name: runtimeProp[0] },
+        value: { type: "Identifier", name: runtimeProp[1] },
+        kind: "init",
+        method: false,
+        shorthand: runtimeProp[0] === runtimeProp[1],
+        computed: false,
+      });
+    }
+  });
+
   return {
     type: "Property",
-    key: { type: "Identifier", name: keyvalue[0] },
-    value: { type: "Identifier", name: keyvalue[1] },
+    key: { type: "Identifier", name: "runtimeProps" },
+    value: {
+      type: "ObjectExpression",
+      properties,
+    },
     kind: "init",
     method: false,
-    shorthand: keyvalue[0] === keyvalue[1],
+    shorthand: false,
     computed: false,
   };
 }
@@ -76,7 +131,7 @@ const plugin: Plugin<[ImportReactOptions?], Program> = (options) => {
     const importedComponents: string[] = [];
 
     // insert "const React = argument[0].React;"
-    if (settings.argumentsToBeAdded?.length) {
+    if (settings.arguments?.length) {
       visit(tree, (node, _, index, ancestors) => {
         if (index === undefined) return;
 
@@ -87,7 +142,7 @@ const plugin: Plugin<[ImportReactOptions?], Program> = (options) => {
             parent["body"].splice(
               index,
               0,
-              ...settings.argumentsToBeAdded.map(composeVariableDeclaration),
+              ...settings.arguments.map(composeVariableDeclaration),
             );
 
             return EXIT;
@@ -98,10 +153,10 @@ const plugin: Plugin<[ImportReactOptions?], Program> = (options) => {
       });
     }
 
-    if (!settings.propertiesToBeInjected?.length) return;
+    if (!settings.runtimeProps?.length) return;
 
     // finds imported React components
-    visit(tree, (node, _, index, ancestors) => {
+    visit(tree, (node, _, __, ancestors) => {
       if (node.type !== "VariableDeclaration") return CONTINUE;
 
       // we are looking for first-level declarations only
@@ -184,7 +239,7 @@ const plugin: Plugin<[ImportReactOptions?], Program> = (options) => {
     });
 
     if (importedComponents.length) {
-      // adds { React } property into the imported components
+      // adds "runtimeProps" into the imported components
       visit(tree, (node) => {
         if (node.type !== "CallExpression") return CONTINUE;
 
@@ -207,9 +262,80 @@ const plugin: Plugin<[ImportReactOptions?], Program> = (options) => {
           importedComponents.includes(firstArgument.name)
         ) {
           if (secondArgument.type === "ObjectExpression") {
-            secondArgument.properties.unshift(
-              ...settings.propertiesToBeInjected.map(composeProperty),
-            );
+            secondArgument.properties.unshift(composeRuntimeProps(settings.runtimeProps));
+          }
+        }
+
+        return CONTINUE;
+      });
+    }
+
+    if (
+      settings.runtimeProps.includes("jsx-runtime") ||
+      settings.runtimeProps.includes("jsx-dev-runtime")
+    ) {
+      // ensures jsx runtime is available in the compiled source
+      visit(tree, (node, _, __, ancestors) => {
+        if (node.type !== "VariableDeclaration") return CONTINUE;
+
+        // we are looking for first-level declarations only
+        if (ancestors.length > 1) return SKIP;
+
+        const variableDeclarator = node.declarations[0];
+        const pattern = variableDeclarator.id;
+        const expression = variableDeclarator.init;
+
+        if (
+          expression?.type === "MemberExpression" &&
+          expression.object.type === "Identifier" &&
+          expression.object.name === "arguments" &&
+          expression.property.type === "Literal" &&
+          expression.property.value === 0
+        ) {
+          if (pattern.type === "ObjectPattern") {
+            const properties = pattern.properties;
+            const jsxRuntime = properties
+              .filter((property) => property.type === "Property")
+              .map((property) => {
+                /* istanbul ignore else */
+                if (property.key.type === "Identifier") {
+                  return property.key.name;
+                } else {
+                  return undefined;
+                }
+              })
+              .filter((property) => property !== undefined);
+
+            const unionRuntime = [...jsxRuntime];
+
+            if (settings.runtimeProps.includes("jsx-runtime")) {
+              unionRuntime.push(...JSXRUNTIME);
+            }
+
+            if (settings.runtimeProps.includes("jsx-dev-runtime")) {
+              unionRuntime.push(...JSXDEVRUNTIME);
+            }
+
+            const uniqueRuntime = [...new Set(unionRuntime)];
+
+            const diffRuntime = uniqueRuntime.filter((x) => !jsxRuntime.includes(x));
+
+            if (diffRuntime.length) {
+              diffRuntime.forEach((name) => {
+                pattern.properties.push({
+                  type: "Property",
+                  kind: "init",
+                  shorthand: false,
+                  method: false,
+                  computed: false,
+                  key: { type: "Identifier", name },
+                  value: {
+                    type: "Identifier",
+                    name: MAP_OF_JSXRUNTIME[name as keyof typeof MAP_OF_JSXRUNTIME],
+                  },
+                });
+              });
+            }
           }
         }
 
