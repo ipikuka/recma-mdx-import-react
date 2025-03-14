@@ -59,11 +59,17 @@ describe("recmaMdxImportReact", () => {
           children: [_jsxs(_components.p, {
             children: ["Hi ", name, " ", random(1, 10)]
           }), "\\n", _jsx(Test1, {
-            React
+            runtimeProps: {
+              React
+            }
           }), "\\n", _jsx(Test2, {
-            React
+            runtimeProps: {
+              React
+            }
           }), "\\n", _jsx(Test3, {
-            React
+            runtimeProps: {
+              React
+            }
           }), "\\n", _jsx("img", {
             src: ImageUrl,
             alt: "image"
@@ -119,9 +125,9 @@ describe("recmaMdxImportReact", () => {
         [
           recmaMdxImportReact,
           {
-            argumentsToBeAdded: undefined,
-            propertiesToBeInjected: undefined,
-          } as ImportReactOptions,
+            arguments: undefined,
+            runtimeProps: undefined,
+          } satisfies ImportReactOptions,
         ],
       ],
     });
@@ -201,14 +207,9 @@ describe("recmaMdxImportReact", () => {
         [
           recmaMdxImportReact,
           {
-            argumentsToBeAdded: ["React", "Preact"],
-            propertiesToBeInjected: [
-              ["React", "React"],
-              ["Fragment", "_Fragment"],
-              ["jsx", "_jsx"],
-              ["jsxs", "_jsxs"],
-            ],
-          } as ImportReactOptions,
+            arguments: ["React", "Preact"],
+            runtimeProps: ["React", "jsx-runtime"],
+          } satisfies ImportReactOptions,
         ],
       ],
     });
@@ -234,22 +235,31 @@ describe("recmaMdxImportReact", () => {
           children: [_jsxs(_components.p, {
             children: ["Hi ", name, " ", random(1, 10)]
           }), "\\n", _jsx(Test1, {
-            React,
-            Fragment: _Fragment,
-            jsx: _jsx,
-            jsxs: _jsxs,
+            runtimeProps: {
+              React,
+              Fragment,
+              jsx: _jsx,
+              jsxs: _jsxs,
+              jsxDev: _jsxDev
+            },
             other: 2
           }), "\\n", _jsx(Test2, {
-            React,
-            Fragment: _Fragment,
-            jsx: _jsx,
-            jsxs: _jsxs,
+            runtimeProps: {
+              React,
+              Fragment,
+              jsx: _jsx,
+              jsxs: _jsxs,
+              jsxDev: _jsxDev
+            },
             other: "me"
           }), "\\n", _jsx(Test3, {
-            React,
-            Fragment: _Fragment,
-            jsx: _jsx,
-            jsxs: _jsxs,
+            runtimeProps: {
+              React,
+              Fragment,
+              jsx: _jsx,
+              jsxs: _jsxs,
+              jsxDev: _jsxDev
+            },
             other: re
           }), "\\n", _jsx("img", {
             src: ImageUrl,
@@ -315,11 +325,17 @@ describe("recmaMdxImportReact", () => {
       function _createMdxContent(props) {
         return _jsxs(_Fragment, {
           children: [_jsx(Test1, {
-            React
+            runtimeProps: {
+              React
+            }
           }), "\\n", _jsx(Test2, {
-            React
+            runtimeProps: {
+              React
+            }
           }), "\\n", _jsx(Test3, {
-            React
+            runtimeProps: {
+              React
+            }
           })]
         });
       }
@@ -351,13 +367,145 @@ describe("recmaMdxImportReact", () => {
   });
 
   // ******************************************
+  test("should ensure the jsx runtime is available in the compiled source", async () => {
+    const source = dedent`
+      import Test from "./context/Test.mjs"
+           
+      Hi
+
+      <Test source={"Hi"} />
+    `;
+
+    const compiledSource = await compile(source, {
+      outputFormat: "function-body",
+      recmaPlugins: [
+        [
+          recmaMdxImportReact,
+          {
+            runtimeProps: ["React", "jsx-dev-runtime"],
+          } satisfies ImportReactOptions,
+        ],
+      ],
+    });
+
+    expect(String(compiledSource)).toContain(dedent`
+      const {Fragment: _Fragment, jsx: _jsx, jsxs: _jsxs, jsxDev: _jsxDev} = arguments[0];
+    `);
+  });
+
+  // ******************************************
+  test("should ensure the jsx runtime is available in the compiled source 2", async () => {
+    const source = "Hi";
+
+    const compiledSource = await compile(source, {
+      outputFormat: "function-body",
+      recmaPlugins: [
+        [
+          recmaMdxImportReact,
+          {
+            runtimeProps: ["React", "jsx-runtime", "jsx-dev-runtime"],
+          } satisfies ImportReactOptions,
+        ],
+      ],
+    });
+
+    expect(String(compiledSource)).toContain(dedent`
+      const {jsx: _jsx, Fragment: Fragment, jsxs: _jsxs, jsxDev: _jsxDev} = arguments[0];
+    `);
+  });
+
+  // ******************************************
+  test("should ensure the jsx runtime is available in the compiled source, development is true", async () => {
+    const source = "Hi";
+
+    const compiledSource = await compile(source, {
+      outputFormat: "function-body",
+      development: true,
+      recmaPlugins: [
+        [
+          recmaMdxImportReact,
+          {
+            runtimeProps: ["React", "jsx-runtime"],
+          } satisfies ImportReactOptions,
+        ],
+      ],
+    });
+
+    expect(String(compiledSource)).toContain(dedent`
+      const {jsxDEV: _jsxDEV, Fragment: Fragment, jsx: _jsx, jsxs: _jsxs} = arguments[0];
+    `);
+  });
+
+  // ******************************************
+  test("should ensure additional runtime (baseUrl) is available for imported components", async () => {
+    const source = dedent`
+      import Test from "./context/Test.mjs"
+           
+      <Test source={"Hi"} />
+    `;
+
+    const compiledSource = await compile(source, {
+      outputFormat: "function-body",
+      recmaPlugins: [
+        [
+          recmaMdxImportReact,
+          {
+            arguments: ["React"],
+            runtimeProps: ["React", ["baseUrl", "baseUrl"]],
+          } satisfies ImportReactOptions,
+        ],
+      ],
+    });
+
+    expect(String(compiledSource)).toMatchInlineSnapshot(`
+      ""use strict";
+      const React = arguments[0].React;
+      const {jsx: _jsx} = arguments[0];
+      const _importMetaUrl = arguments[0].baseUrl;
+      if (!_importMetaUrl) throw new Error("Unexpected missing \`options.baseUrl\` needed to support \`export … from\`, \`import\`, or \`import.meta.url\` when generating \`function-body\`");
+      const {default: Test} = await import(_resolveDynamicMdxSpecifier("./context/Test.mjs"));
+      function _createMdxContent(props) {
+        return _jsx(Test, {
+          runtimeProps: {
+            React,
+            baseUrl
+          },
+          source: "Hi"
+        });
+      }
+      function MDXContent(props = {}) {
+        const {wrapper: MDXLayout} = props.components || ({});
+        return MDXLayout ? _jsx(MDXLayout, {
+          ...props,
+          children: _jsx(_createMdxContent, {
+            ...props
+          })
+        }) : _createMdxContent(props);
+      }
+      return {
+        default: MDXContent
+      };
+      function _resolveDynamicMdxSpecifier(d) {
+        if (typeof d !== "string") return d;
+        try {
+          new URL(d);
+          return d;
+        } catch {}
+        if (d.startsWith("/") || d.startsWith("./") || d.startsWith("../")) return new URL(d, _importMetaUrl).href;
+        return d;
+      }
+      "
+    `);
+  });
+
+  // ******************************************
   test("example in the readme", async () => {
     const source = dedent`
       import Test from "./context/Test.mjs"
       
       Hello world !
 
-      <Test />
+      <Test source={source} />
     `;
 
     const compiledSource = await compile(source, {
@@ -381,7 +529,10 @@ describe("recmaMdxImportReact", () => {
           children: [_jsx(_components.p, {
             children: "Hello world !"
           }), "\\n", _jsx(Test, {
-            React
+            runtimeProps: {
+              React
+            },
+            source: source
           })]
         });
       }
