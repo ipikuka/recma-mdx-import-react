@@ -14,11 +14,16 @@ This package is a **[unified][unified]** (**[recma][recma]**) plugin **that ensu
 
 ## When should I use this?
 
-It is a work around for the issues
+If you are using MDX, and want to import a React component dynamically into MDX, you should use **`recma-mdx-import-react`**, otherwise imported component throws an error **React/jsx/jsxs is null**. The **`recma-mdx-import-react`** ensures the runtime props `{React, jsx, jsxs, jsxDev, Fragment}` is available in the imported React components (as `runtimeProps`). You can set the [options](#Options) to define which runtime prop is going to be available.
+
+It is a fix for the issues
  * https://github.com/vercel/next.js/issues/76395
  * https://github.com/ipikuka/next-mdx-remote-client/issues/9
 
-**You should insert `React` instance into function construction arguments to get it in the compiled source !**
+**The tool you use should insert `React` instance into function construction arguments to get it in the compiled source !**
++ **`next-mdx-remote-client`** provides the `React` instance available in the compiled source.
++ **`next-mdx-remote`** doesn't provide the `React` instance; and it doesn't support import either.
++ **`@mdx-js/mdx`** doesn't provide the `React` instance yet.
 
 ## Installation
 
@@ -43,7 +48,7 @@ import Test from "./context/Test.mjs"
 
 Hello world !
 
-<Test />
+<Test source={source} />
 ```
 
 And our module, `example.js`, looks as follows:
@@ -78,8 +83,8 @@ function _createMdxContent(props) {
   // ...
   return _jsxs(_Fragment, {
     // ...
--   _jsx(Test, {})
-+   _jsx(Test, { React })
+-   _jsx(Test, { source: source })
++   _jsx(Test, { runtimeProps: { React }, source: source })
     // ...
   })
 }
@@ -87,38 +92,38 @@ function _createMdxContent(props) {
 
 ## Options
 
-All options are optional.
+All options are optional and has default values.
 
 ```typescript
 export type ImportReactOptions = {
-  argumentsToBeAdded?: string[];
-  propertiesToBeInjected?: [string, string][]; // array of [key, value] tuples
+  arguments?: string[]; // default is ["React"]
+  runtimeProps?: ("React" | "jsx-runtime" | "jsx-dev-runtime" | [string, string])[]; // default is ["React"]
 };
 ```
 
-### argumentsToBeAdded
+### arguments
 
 It is an **array** option to get arguments from arguments[0] in the compiled source.
 
 The default is `["React"]`.
 
 ```javascript
-use(recmaMdxImportReact, { argumentsToBeAdded: ["Preact"] } as ImportReactOptions);
+use(recmaMdxImportReact, { arguments: ["Preact"] } as ImportReactOptions);
 ```
 
 Now the statement will be `const Preact = arguments[0].Preact;` in the compiled source.
 
-### propertiesToBeInjected
+### runtimeProps
 
-It is an **array of key, value tuple** option to inject properties into the imported components in the compiled source.
+It is an **array of `("React" | "jsx-runtime" | "jsx-dev-runtime" | [string, string])`** option to inject **`runtimeProps`** into the imported components in the compiled source.
 
-The default is `[["React", "React"]]`.
+The default is `["React"]`.
 
 ```javascript
-use(recmaMdxImportReact, { propertiesToBeInjected: [["React", "React"], ["jsx": "_jsx"]] } as ImportReactOptions);
+use(recmaMdxImportReact, { runtimeProps: ["React", "jsx-runtime"] } as ImportReactOptions);
 ```
 
-Now, both `{ React, jsx: _jsx }` properties will be injected to the imported components in the compiled source.
+Now, `React` and `jsx-runtime` as `{ runtimeProps: { React, jsx: _jsx, jsxs: _jsxs, Fragment }}` will be provided to the imported React components in the compiled source.
 
 ## Syntax tree
 
@@ -163,6 +168,8 @@ I like to contribute the Unified / Remark / MDX ecosystem, so I recommend you to
   – Rehype plugin to add language information as a property to `pre` element
 - [`rehype-highlight-code-lines`](https://www.npmjs.com/package/rehype-highlight-code-lines)
   – Rehype plugin to add line numbers to code blocks and allow highlighting of desired code lines
+- [`rehype-code-meta`](https://www.npmjs.com/package/rehype-code-meta)
+  – Rehype plugin to copy `code.data.meta` to `code.properties.metastring`
 
 ### My Recma Plugins
 
@@ -175,7 +182,7 @@ I like to contribute the Unified / Remark / MDX ecosystem, so I recommend you to
 - [`recma-mdx-import-media`](https://www.npmjs.com/package/recma-mdx-import-media)
   – Recma plugin to turn media relative paths into import declarations for both markdown and html syntax in MDX.
 - [`recma-mdx-import-react`](https://www.npmjs.com/package/recma-mdx-import-react)
-  – Recma plugin to ensure getting React from arguments and and inject it as property into the imported components in the compiled source.
+  – Recma plugin to ensure getting `React` instance from the arguments and to make the runtime props `{React, jsx, jsxs, jsxDev, Fragment}` is available in the dynamically imported components in the compiled source of MDX.
 
 ## License
 
