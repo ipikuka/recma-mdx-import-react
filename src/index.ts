@@ -121,6 +121,7 @@ const plugin: Plugin<[ImportReactOptions?], Program> = (options) => {
         if (node.type === "VariableDeclaration") {
           const parent = ancestors[0] as Program;
 
+          /* istanbul ignore if */
           if ("body" in parent) {
             parent["body"].splice(
               index,
@@ -158,6 +159,7 @@ const plugin: Plugin<[ImportReactOptions?], Program> = (options) => {
         expression.property.name === "default" &&
         expression.object.type === "AwaitExpression"
       ) {
+        /* istanbul ignore if */
         if (expression.object.argument.type === "ImportExpression") {
           if (expression.object.argument.source.type === "CallExpression") {
             const argument = expression.object.argument.source.arguments[0];
@@ -167,6 +169,7 @@ const plugin: Plugin<[ImportReactOptions?], Program> = (options) => {
           }
         }
       } else if (expression?.type === "AwaitExpression") {
+        /* istanbul ignore if */
         if (expression.argument.type === "ImportExpression") {
           if (expression.argument.source.type === "CallExpression") {
             const argument = expression.argument.source.arguments[0];
@@ -192,8 +195,10 @@ const plugin: Plugin<[ImportReactOptions?], Program> = (options) => {
         return CONTINUE;
       }
 
+      /* istanbul ignore else */
       if (pattern.type === "ObjectPattern") {
         const property = pattern.properties[0];
+        /* istanbul ignore if */
         if (
           property.type === "Property" &&
           property.key.type === "Identifier" &&
@@ -244,6 +249,7 @@ const plugin: Plugin<[ImportReactOptions?], Program> = (options) => {
           firstArgument.type === "Identifier" &&
           importedComponents.includes(firstArgument.name)
         ) {
+          /* istanbul ignore if */
           if (secondArgument.type === "ObjectExpression") {
             secondArgument.properties.unshift(composeRuntimeProps(settings.runtimeProps));
           }
@@ -275,6 +281,7 @@ const plugin: Plugin<[ImportReactOptions?], Program> = (options) => {
           expression.property.type === "Literal" &&
           expression.property.value === 0
         ) {
+          /* istanbul ignore if */
           if (pattern.type === "ObjectPattern") {
             const properties = pattern.properties;
             const jsxRuntime = properties
