@@ -1,6 +1,6 @@
 {
   "name": "recma-mdx-import-react",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "description": "Recma plugin to ensure getting `React` instance from the arguments and to make the runtime props `{React, jsx, jsxs, jsxDev, Fragment}` is available in the dynamically imported components in the compiled source of MDX.",
   "type": "module",
   "exports": "./dist/esm/index.js",
