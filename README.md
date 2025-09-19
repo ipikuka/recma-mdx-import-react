@@ -14,7 +14,7 @@ This package is a **[unified][unified]** (**[recma][recma]**) plugin **that ensu
 
 ## When should I use this?
 
-If you are using MDX, and want to import a React component dynamically into MDX, you should use **`recma-mdx-import-react`**, otherwise imported component throws an error **React/jsx/jsxs is null**. The **`recma-mdx-import-react`** ensures the runtime props `{React, jsx, jsxs, jsxDev, Fragment}` is available in the imported React components (as `runtimeProps`). You can set the [options](#Options) to define which runtime prop is going to be available.
+If you want to import a React component dynamically into MDX, you should use **`recma-mdx-import-react`**, otherwise imported component throws an error **React/jsx/jsxs is null**. The **`recma-mdx-import-react`** ensures the runtime props `{React, jsx, jsxs, jsxDev, Fragment}` is available in the imported React components (as `runtimeProps`). You can set the [options](#Options) to define which runtime prop is going to be available.
 
 It is a fix for the issues
  * https://github.com/vercel/next.js/issues/76395
@@ -23,7 +23,7 @@ It is a fix for the issues
 **The tool you use should insert `React` instance into function construction arguments to get it in the compiled source !**
 + **`next-mdx-remote-client`** provides the `React` instance available in the compiled source.
 + **`next-mdx-remote`** doesn't provide the `React` instance; and it doesn't support import either.
-+ **`@mdx-js/mdx`** doesn't provide the `React` instance yet in the runtime options.
++ **`@mdx-js/mdx`** doesn't provide the `React` instance yet.
 
 ## Installation
 
@@ -139,7 +139,7 @@ This plugin works with `unified` version 6+. It is compatible with `mdx` version
 
 ## Security
 
-Use of `recma-mdx-import-react` does not involve user content so there are no openings for cross-site scripting (XSS) attacks.
+Use of **`recma-mdx-import-react`** does not involve user content so there are no openings for cross-site scripting (XSS) attacks.
 
 ## My Plugins
 
